@@ -11,3 +11,14 @@ frontend:
 automation: !include automations.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
+
+# Git-canonical dashboards (Model B). The default Overview stays UI-managed;
+# this adds a second, YAML-defined dashboard in the sidebar.
+lovelace:
+  dashboards:
+    household:
+      mode: yaml
+      title: Household
+      icon: mdi:home-assistant
+      show_in_sidebar: true
+      filename: dashboards/household.yaml

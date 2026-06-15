@@ -1,0 +1,90 @@
+# Household dashboard — git-canonical (Model B behavior layer).
+#
+# >>> VERIFY ENTITY IDS before trusting this. HA auto-generates entity_ids from
+#     device names; the ones below are best-guesses from the current device list.
+#     Check each in Developer Tools → States and fix any that differ. A wrong id
+#     just renders as "unavailable" — harmless; correct it and reload.
+#
+#     Likely things to confirm:
+#       - Hue lights: light.dining_light_1 / _2, light.hue_color_spot_1,
+#         light.living_room_downlight, and the room groups light.bedroom /
+#         light.dining / light.living_room
+#       - Hue motion sensor exposes motion + temperature + illuminance + battery
+#       - Sonoff sensor siblings: ..._temperature, ..._battery, ..._linkquality
+
+title: Household
+views:
+  - title: Home
+    path: home
+    icon: mdi:home
+    cards:
+      # --- Bathroom climate (the awareness-only humidity automation) ---
+      - type: gauge
+        name: Bathroom humidity
+        entity: sensor.0xf4b3b1fffe6bb49d_humidity
+        unit: "%"
+        min: 20
+        max: 90
+        needle: true
+        severity:
+          green: 0
+          yellow: 60
+          red: 75
+
+      - type: entities
+        title: Bathroom fan automation
+        entities:
+          - entity: sensor.0xf4b3b1fffe6bb49d_humidity
+            name: Humidity now
+          - entity: input_number.bathroom_humidity_baseline
+            name: Learned baseline
+          - entity: input_boolean.bathroom_shower_active
+            name: Shower active
+
+      - type: history-graph
+        title: Bathroom humidity (24h)
+        hours_to_show: 24
+        entities:
+          - entity: sensor.0xf4b3b1fffe6bb49d_humidity
+            name: Humidity
+          - entity: input_number.bathroom_humidity_baseline
+            name: Baseline
+
+      # --- Lights (room groups first, then individual fixtures) ---
+      - type: entities
+        title: Lights
+        entities:
+          - entity: light.bedroom
+            name: Bedroom
+          - entity: light.dining
+            name: Dining
+          - entity: light.living_room
+            name: Living room
+          - type: divider
+          - entity: light.dining_light_1
+          - entity: light.dining_light_2
+          - entity: light.hue_color_spot_1
+            name: Bedroom spot
+          - entity: light.living_room_downlight
+
+      # --- Kitchen (Hue motion sensor) — awareness only ---
+      - type: entities
+        title: Kitchen
+        entities:
+          - entity: binary_sensor.kitchen_motion_sensor_motion
+            name: Motion
+          - entity: sensor.kitchen_motion_sensor_temperature
+            name: Temperature
+          - entity: sensor.kitchen_motion_sensor_illuminance
+            name: Light level
+
+      # --- Device health ---
+      - type: entities
+        title: Device health
+        entities:
+          - entity: sensor.0xf4b3b1fffe6bb49d_battery
+            name: Bathroom sensor battery
+          - entity: sensor.0xf4b3b1fffe6bb49d_linkquality
+            name: Bathroom sensor link
+          - entity: sensor.kitchen_motion_sensor_battery
+            name: Kitchen motion battery
