@@ -54,18 +54,21 @@ views:
       - type: entities
         title: Lights
         entities:
-          - entity: light.bedroom
-            name: Bedroom
-          - entity: light.dining
-            name: Dining
-          - entity: light.living_room
-            name: Living room
+          - entity: light.bedroom_bedroom
+            name: Bedroom (room)
+          - entity: light.dining_dining
+            name: Dining (room)
+          - entity: light.living_room_living_room
+            name: Living room (room)
           - type: divider
-          - entity: light.dining_light_1
-          - entity: light.dining_light_2
-          - entity: light.hue_color_spot_1
+          - entity: light.dining_dining_light_1
+            name: Dining light 1
+          - entity: light.dining_dining_light_2
+            name: Dining light 2
+          - entity: light.bedroom_hue_color_spot_1
             name: Bedroom spot
-          - entity: light.living_room_downlight
+          - entity: light.living_room_living_room_2
+            name: Living room downlight
 
       # --- Kitchen (Hue motion sensor) — awareness only ---
       - type: entities
