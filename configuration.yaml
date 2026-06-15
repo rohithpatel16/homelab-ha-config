@@ -16,7 +16,7 @@ scene: !include scenes.yaml
 # this adds a second, YAML-defined dashboard in the sidebar.
 lovelace:
   dashboards:
-    household:
+    household-dashboard:
       mode: yaml
       title: Household
       icon: mdi:home-assistant
