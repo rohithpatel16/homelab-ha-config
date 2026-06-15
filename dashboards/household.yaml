@@ -1,16 +1,9 @@
 # Household dashboard — git-canonical (Model B behavior layer).
+# Entity ids verified against Developer Tools → States on 2026-06-14.
 #
-# >>> VERIFY ENTITY IDS before trusting this. HA auto-generates entity_ids from
-#     device names; the ones below are best-guesses from the current device list.
-#     Check each in Developer Tools → States and fix any that differ. A wrong id
-#     just renders as "unavailable" — harmless; correct it and reload.
-#
-#     Likely things to confirm:
-#       - Hue lights: light.dining_light_1 / _2, light.hue_color_spot_1,
-#         light.living_room_downlight, and the room groups light.bedroom /
-#         light.dining / light.living_room
-#       - Hue motion sensor exposes motion + temperature + illuminance + battery
-#       - Sonoff sensor siblings: ..._temperature, ..._battery, ..._linkquality
+# Note: the Hue motion sensor's entities are named living_room_sensor_1_* (the
+# device was added as "Kitchen motion sensor" but lives under living_room). If it
+# is physically in the kitchen, rename the device in HA and update these ids.
 
 title: Household
 views:
@@ -36,6 +29,8 @@ views:
         entities:
           - entity: sensor.0xf4b3b1fffe6bb49d_humidity
             name: Humidity now
+          - entity: sensor.0xf4b3b1fffe6bb49d_temperature
+            name: Bathroom temperature
           - entity: input_number.bathroom_humidity_baseline
             name: Learned baseline
           - entity: input_boolean.bathroom_shower_active
@@ -70,15 +65,15 @@ views:
           - entity: light.living_room_living_room_2
             name: Living room downlight
 
-      # --- Kitchen (Hue motion sensor) — awareness only ---
+      # --- Hue motion sensor (living_room_sensor_1) — awareness only ---
       - type: entities
-        title: Kitchen
+        title: Living room sensor
         entities:
-          - entity: binary_sensor.kitchen_motion_sensor_motion
+          - entity: binary_sensor.living_room_sensor_1_motion
             name: Motion
-          - entity: sensor.kitchen_motion_sensor_temperature
+          - entity: sensor.living_room_sensor_1_temperature
             name: Temperature
-          - entity: sensor.kitchen_motion_sensor_illuminance
+          - entity: sensor.living_room_sensor_1_illuminance
             name: Light level
 
       # --- Device health ---
@@ -89,5 +84,7 @@ views:
             name: Bathroom sensor battery
           - entity: sensor.0xf4b3b1fffe6bb49d_linkquality
             name: Bathroom sensor link
-          - entity: sensor.kitchen_motion_sensor_battery
-            name: Kitchen motion battery
+          - entity: sensor.living_room_sensor_1_battery
+            name: Living room sensor battery
+          - entity: sensor.living_room_sensor_1_zigbee_connectivity
+            name: Living room sensor link
