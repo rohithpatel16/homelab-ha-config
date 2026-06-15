@@ -6,6 +6,10 @@ secrets.yaml
 .google.token
 ip_bans.yaml
 
+# Zigbee2MQTT: device/pairing layer (snapshot-recovered, not git) AND it embeds
+# the Zigbee network key + MQTT credentials. Whole dir is out of bounds.
+zigbee2mqtt/
+
 # --- Runtime state and databases (transient, huge) ---
 home-assistant_v2.db
 home-assistant_v2.db-*
@@ -22,6 +26,8 @@ tts/
 .cloud/
 .uuid
 .HA_VERSION
+.ha_run.lock
+.cache/
 backups/
 
 # --- OS Noise ---
