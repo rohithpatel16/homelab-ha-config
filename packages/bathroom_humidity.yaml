@@ -1,0 +1,132 @@
+# Bathroom humidity — awareness-only (Phase 10, first git-canonical HA artifact)
+#
+# Awareness Capability only: this NEVER touches the fan. There is no smart relay
+# in the fan circuit yet, so Home Assistant only *notifies* you when the room has
+# dried out enough to turn the fan off by hand. Upgrading this to an Actuation
+# Authority (auto-off) is gated on installing a relay + a documented manual
+# fallback — see services/home-automation/README.md.
+#
+# Design: baseline + hysteresis, not a fixed threshold.
+#   - A learned `baseline` slowly tracks ambient/seasonal humidity while no shower
+#     is active, so summer-humid and winter-dry days both behave.
+#   - Shower detected when humidity rises > baseline + SPIKE_DELTA (12%).
+#   - "Fan can go off" notified when humidity falls back < baseline + RESET_DELTA
+#     (4%). The 12→4 gap is the hysteresis band that stops flapping.
+#   - A MAX_RUNTIME (45 min) safety ping if humidity stays elevated unusually long.
+#
+# Wired for this homelab:
+#   sensor:  sensor.0xf4b3b1fffe6bb49d_humidity  (Sonoff via Zigbee2MQTT/MQTT)
+#   notify:  notify.pushover  — VERIFY the exact name in Developer Tools → Actions
+#            (search "pushover"). If your service is named differently, change the
+#            two `service: notify.pushover` lines below to match.
+#
+# Tuning knobs are the literals 12 / 4 / 45 below; promote them to input_number
+# helpers later if you want to tune from the UI without editing YAML.
+
+input_boolean:
+  bathroom_shower_active:
+    name: Bathroom shower active
+    icon: mdi:shower
+
+input_number:
+  bathroom_humidity_baseline:
+    name: Bathroom humidity baseline
+    min: 20
+    max: 90
+    step: 0.5
+    initial: 50 # first-run seed only; the value persists & self-corrects
+    unit_of_measurement: "%"
+    icon: mdi:water-percent
+
+automation:
+  - id: bathroom_humidity_learn_baseline
+    alias: "Bathroom humidity — learn resting baseline"
+    description: >
+      Slowly tracks ambient humidity (exponential smoothing) while no shower is
+      active, so the spike/clear thresholds adapt instead of being a fixed number.
+      Converges from any seed value within a few hours.
+    trigger:
+      - platform: time_pattern
+        minutes: "/5"
+    condition:
+      - condition: state
+        entity_id: input_boolean.bathroom_shower_active
+        state: "off"
+    action:
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.bathroom_humidity_baseline
+        data:
+          value: >
+            {{ (0.9 * (states('input_number.bathroom_humidity_baseline') | float(50))
+                + 0.1 * (states('sensor.0xf4b3b1fffe6bb49d_humidity') | float(50))) | round(1) }}
+    mode: single
+
+  - id: bathroom_humidity_shower_detected
+    alias: "Bathroom humidity — shower detected"
+    description: >
+      Humidity sustained above baseline + 12% for 2 minutes flags an active shower.
+    trigger:
+      - platform: template
+        value_template: >
+          {{ states('sensor.0xf4b3b1fffe6bb49d_humidity') | float(0)
+             > (states('input_number.bathroom_humidity_baseline') | float(50)) + 12 }}
+        for:
+          minutes: 2
+    condition:
+      - condition: state
+        entity_id: input_boolean.bathroom_shower_active
+        state: "off"
+    action:
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.bathroom_shower_active
+    mode: single
+
+  - id: bathroom_humidity_cleared_notify
+    alias: "Bathroom humidity — back to normal, suggest fan off"
+    description: >
+      After a shower, once humidity falls back within 4% of baseline for 2 minutes,
+      notify that the fan can be turned off by hand. Awareness only — no actuation.
+    trigger:
+      - platform: template
+        value_template: >
+          {{ states('sensor.0xf4b3b1fffe6bb49d_humidity') | float(100)
+             < (states('input_number.bathroom_humidity_baseline') | float(50)) + 4 }}
+        for:
+          minutes: 2
+    condition:
+      - condition: state
+        entity_id: input_boolean.bathroom_shower_active
+        state: "on"
+    action:
+      - service: notify.pushover # verify name in Developer Tools → Actions
+        data:
+          title: "Bathroom fan"
+          message: >
+            Humidity back to normal ({{ states('sensor.0xf4b3b1fffe6bb49d_humidity') }}%).
+            Safe to turn the exhaust fan off.
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.bathroom_shower_active
+    mode: single
+
+  - id: bathroom_humidity_max_runtime_notify
+    alias: "Bathroom humidity — elevated too long"
+    description: >
+      Safety ping if humidity stays elevated 45 min after a shower was detected —
+      catches a fan left running or a sensor/threshold needing calibration.
+    trigger:
+      - platform: state
+        entity_id: input_boolean.bathroom_shower_active
+        to: "on"
+        for:
+          minutes: 45
+    action:
+      - service: notify.pushover # verify name in Developer Tools → Actions
+        data:
+          title: "Bathroom fan"
+          message: >
+            Humidity still elevated 45 min after a shower
+            ({{ states('sensor.0xf4b3b1fffe6bb49d_humidity') }}%). Fan may still be running.
+    mode: single
