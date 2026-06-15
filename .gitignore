@@ -1,0 +1,28 @@
+# --- Secrets and credentials: NEVER commit --
+secrets.yaml
+.storage/
+*.key
+*.pem
+.google.token
+ip_bans.yaml
+
+# --- Runtime state and databases (transient, huge) ---
+home-assistant_v2.db
+home-assistant_v2.db-*
+*.db
+*.db-shm
+*.db-wal
+*.log
+*.log.*
+
+# --- Caches / generated ---
+__pycache__/
+deps/
+tts/
+.cloud/
+.uuid
+.HA_VERSION
+backups/
+
+# --- OS Noise ---
+.DS_Store
